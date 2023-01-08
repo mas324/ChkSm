@@ -6,6 +6,9 @@ import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Map;
 
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
@@ -15,6 +18,8 @@ import javax.swing.JProgressBar;
 import javax.swing.JTextField;
 import javax.swing.SpringLayout;
 import javax.swing.SwingConstants;
+
+import data.FileManager;
 
 public class Home {
 
@@ -87,7 +92,7 @@ public class Home {
 		JProgressBar progressBar = new JProgressBar();
 		springLayout.putConstraint(SpringLayout.WEST, progressBar, 50, SpringLayout.WEST,
 				frmChecksumMaker.getContentPane());
-		springLayout.putConstraint(SpringLayout.SOUTH, progressBar, -50, SpringLayout.SOUTH,
+		springLayout.putConstraint(SpringLayout.SOUTH, progressBar, -35, SpringLayout.SOUTH,
 				frmChecksumMaker.getContentPane());
 		springLayout.putConstraint(SpringLayout.EAST, progressBar, -50, SpringLayout.EAST,
 				frmChecksumMaker.getContentPane());
@@ -103,5 +108,53 @@ public class Home {
 		springLayout.putConstraint(SpringLayout.WEST, lblProgressCurrent, 0, SpringLayout.WEST, progressBar);
 		springLayout.putConstraint(SpringLayout.EAST, lblProgressCurrent, 0, SpringLayout.EAST, progressBar);
 		frmChecksumMaker.getContentPane().add(lblProgressCurrent);
+
+		JButton btnStart = new JButton("Start");
+		btnStart.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				Thread hashmapThread = new Thread(() -> {
+					FileManager fileManager = new FileManager(directory);
+					Map<File, String> m = fileManager.getFilemap();
+					try {
+						FileWriter writer = new FileWriter(directory.toString() + "\\" + directory.getName() + ".md5");
+						m.forEach((k, v) -> {
+							try {
+								writer.write(String.format("%s *..%s%s\n", v, k.getName(),
+										k.toString().split(directory.getName(), 2)[1]));
+							} catch (IOException e1) {
+								e1.printStackTrace();
+							}
+						});
+						writer.close();
+					} catch (IOException e1) {
+						e1.printStackTrace();
+					}
+				});
+
+				Thread progressThread = new Thread(() -> {
+					int current = 0;
+					while (current < 100) {
+						progressBar.setValue(current);
+						try {
+							Thread.sleep(500);
+						} catch (InterruptedException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
+						current = Math.round(((float) FileManager.fileComplete / FileManager.fileTotal) * 100);
+					}
+					progressBar.setValue(progressBar.getMaximum());
+				});
+
+				hashmapThread.start();
+				progressThread.start();
+			}
+		});
+		springLayout.putConstraint(SpringLayout.WEST, btnStart, 150, SpringLayout.WEST,
+				frmChecksumMaker.getContentPane());
+		springLayout.putConstraint(SpringLayout.SOUTH, btnStart, -20, SpringLayout.NORTH, progressBar);
+		springLayout.putConstraint(SpringLayout.EAST, btnStart, -150, SpringLayout.EAST,
+				frmChecksumMaker.getContentPane());
+		frmChecksumMaker.getContentPane().add(btnStart);
 	}
 }

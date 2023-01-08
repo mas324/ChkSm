@@ -9,20 +9,21 @@ public class FileManager {
 	private static ConcurrentHashMap<File, String> filemap;
 	private File directory;
 	private int algo;
+	public static int fileComplete;
+	public static int fileTotal;
 
 	public FileManager() {
-		directory = null;
-		algo = 0;
+		this(null, 0);
 	}
 
 	public FileManager(File f) {
-		directory = f;
-		algo = 0;
+		this(f, 0);
 	}
 
 	public FileManager(File f, int algorithm) {
 		directory = f;
 		algo = algorithm;
+		createFileTotal(directory);
 	}
 
 	public File getDirectory() {
@@ -31,6 +32,10 @@ public class FileManager {
 
 	public void setDirectory(File directory) {
 		this.directory = directory;
+	}
+
+	public void setAlgo(int algo) {
+		this.algo = algo;
 	}
 
 	public void setDirectory(String directory) throws IOException {
@@ -45,39 +50,47 @@ public class FileManager {
 		return filemap;
 	}
 
-	public double getPercent() {
-		return filemap.values().size() / filemap.size();
-	}
-
 	private void createFileHashList() {
 		filemap = new ConcurrentHashMap<>();
 		createFileList(directory);
+
+		fileComplete = 0;
 
 		System.gc();
 
 		int THREADS;
 		try {
-			THREADS = Integer.parseInt(System.getenv("NUMBER_OF_PROCESSORS")) / 2;
+			THREADS = Integer.parseInt(System.getenv("NUMBER_OF_PROCESSORS")) / 4;
 		} catch (SecurityException e) {
 			THREADS = 2;
 		}
 
 		switch (algo) {
 		case 0:
-			filemap.forEachKey(filemap.size() / THREADS, k -> filemap.compute(k, (key, value) -> Hashing.fast(key)));
+			filemap.forEachKey(filemap.size() / THREADS, (key) -> {
+				filemap.put(key, Hashing.fast(key));
+				fileComplete++;
+			});
 			break;
 		case 1:
-			filemap.forEachKey(filemap.size() / THREADS, k -> filemap.compute(k, (key, value) -> Hashing.slow(key)));
+			filemap.forEachKey(filemap.size() / THREADS, (key) -> {
+				filemap.put(key, Hashing.slow(key));
+				fileComplete++;
+			});
 			break;
 		case 2:
-			filemap.forEachKey(filemap.size() / THREADS,
-					k -> filemap.compute(k, (key, value) -> Hashing.enhanced(key)));
+			filemap.forEachKey(filemap.size() / THREADS, (key) -> {
+				filemap.put(key, Hashing.enhanced(key));
+				fileComplete++;
+			});
 			break;
 		default:
-			filemap.forEachKey(filemap.size() / THREADS, k -> filemap.compute(k, (key, value) -> Hashing.fast(key)));
+			filemap.forEachKey(filemap.size() / THREADS, (key) -> {
+				filemap.put(key, Hashing.fast(key));
+				fileComplete++;
+			});
 			break;
 		}
-
 	}
 
 	private static void createFileList(File f) {
@@ -89,5 +102,16 @@ public class FileManager {
 			}
 		else
 			filemap.put(f, "0");
+	}
+
+	private void createFileTotal(File f) {
+		File[] list = f.listFiles();
+		if (list != null)
+			for (File file : list) {
+				createFileTotal(file);
+			}
+		else {
+			fileTotal++;
+		}
 	}
 }
