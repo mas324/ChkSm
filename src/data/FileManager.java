@@ -8,14 +8,21 @@ public class FileManager {
 
 	private static ConcurrentHashMap<File, String> filemap;
 	private File directory;
+	private int algo;
 
 	public FileManager() {
 		directory = null;
+		algo = 0;
 	}
 
-	public FileManager(File f) throws IOException {
+	public FileManager(File f) {
 		directory = f;
-		createFileHashList();
+		algo = 0;
+	}
+
+	public FileManager(File f, int algorithm) {
+		directory = f;
+		algo = algorithm;
 	}
 
 	public File getDirectory() {
@@ -26,19 +33,51 @@ public class FileManager {
 		this.directory = directory;
 	}
 
-	public void setDirectory(String directory) {
+	public void setDirectory(String directory) throws IOException {
+		File f = new File(directory);
+		if (f.isFile())
+			throw new IOException("Selection is not a directory");
 		this.directory = new File(directory);
 	}
 
 	public ConcurrentHashMap<File, String> getFilemap() {
+		createFileHashList();
 		return filemap;
 	}
 
-	protected void createFileHashList() {
+	public double getPercent() {
+		return filemap.values().size() / filemap.size();
+	}
+
+	private void createFileHashList() {
 		filemap = new ConcurrentHashMap<>();
 		createFileList(directory);
 
-		filemap.forEachKey(filemap.size() / 8, k -> filemap.compute(k, (key, value) -> Hashing.fast(key)));
+		System.gc();
+
+		int THREADS;
+		try {
+			THREADS = Integer.parseInt(System.getenv("NUMBER_OF_PROCESSORS")) / 2;
+		} catch (SecurityException e) {
+			THREADS = 2;
+		}
+
+		switch (algo) {
+		case 0:
+			filemap.forEachKey(filemap.size() / THREADS, k -> filemap.compute(k, (key, value) -> Hashing.fast(key)));
+			break;
+		case 1:
+			filemap.forEachKey(filemap.size() / THREADS, k -> filemap.compute(k, (key, value) -> Hashing.slow(key)));
+			break;
+		case 2:
+			filemap.forEachKey(filemap.size() / THREADS,
+					k -> filemap.compute(k, (key, value) -> Hashing.enhanced(key)));
+			break;
+		default:
+			filemap.forEachKey(filemap.size() / THREADS, k -> filemap.compute(k, (key, value) -> Hashing.fast(key)));
+			break;
+		}
+
 	}
 
 	private static void createFileList(File f) {

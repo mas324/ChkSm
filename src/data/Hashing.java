@@ -14,7 +14,11 @@ public class Hashing {
 	}
 
 	protected static String slow(File in) {
-		return hash(in, "SHA-256");
+		return hash(in, "SHA-1");
+	}
+
+	protected static String enhanced(File in) {
+		return hash(in, "SHA-512");
 	}
 
 	private static String hash(File in, String algorithm) {
@@ -38,7 +42,7 @@ public class Hashing {
 			e.printStackTrace();
 		}
 
-		return null;
+		return "Error occured in hashing";
 	}
 
 }
