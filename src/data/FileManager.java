@@ -6,11 +6,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class FileManager {
 
-	private static ConcurrentHashMap<File, String> filemap;
+	private ConcurrentHashMap<File, String> filemap;
 	private File directory;
 	private int algo;
-	public static int fileComplete;
-	public static int fileTotal;
+	public int fileComplete;
 
 	public FileManager() {
 		this(null, 0);
@@ -23,7 +22,8 @@ public class FileManager {
 	public FileManager(File f, int algorithm) {
 		directory = f;
 		algo = algorithm;
-		createFileTotal(directory);
+		filemap = new ConcurrentHashMap<>();
+		createFileList(directory);
 	}
 
 	public File getDirectory() {
@@ -32,17 +32,27 @@ public class FileManager {
 
 	public void setDirectory(File directory) {
 		this.directory = directory;
+		filemap.clear();
+		createFileList(getDirectory());
+	}
+
+	public void setDirectory(String directory) throws IOException {
+		File f = new File(directory);
+		if (f.isFile())
+			throw new IOException("Selection is not a directory or does not exist");
+		setDirectory(f);
 	}
 
 	public void setAlgo(int algo) {
 		this.algo = algo;
 	}
 
-	public void setDirectory(String directory) throws IOException {
-		File f = new File(directory);
-		if (f.isFile())
-			throw new IOException("Selection is not a directory");
-		this.directory = new File(directory);
+	public int getSize() {
+		return filemap.size();
+	}
+
+	public int getFileComplete() {
+		return fileComplete;
 	}
 
 	public ConcurrentHashMap<File, String> getFilemap() {
@@ -51,12 +61,7 @@ public class FileManager {
 	}
 
 	private void createFileHashList() {
-		filemap = new ConcurrentHashMap<>();
-		createFileList(directory);
-
 		fileComplete = 0;
-
-		System.gc();
 
 		int THREADS;
 		try {
@@ -93,7 +98,7 @@ public class FileManager {
 		}
 	}
 
-	private static void createFileList(File f) {
+	private void createFileList(File f) {
 		File[] list = f.listFiles();
 
 		if (list != null)
@@ -101,17 +106,6 @@ public class FileManager {
 				createFileList(file);
 			}
 		else
-			filemap.put(f, "0");
-	}
-
-	private void createFileTotal(File f) {
-		File[] list = f.listFiles();
-		if (list != null)
-			for (File file : list) {
-				createFileTotal(file);
-			}
-		else {
-			fileTotal++;
-		}
+			filemap.put(f, "");
 	}
 }

@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-public class Hashing {
+class Hashing {
 
 	protected static String fast(File in) {
 		return hash(in, "MD5");
